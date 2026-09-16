@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chroma Hunt: Camuflados | Jogo de Estratégia e Raciocínio</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- CABEÇALHO / HUD PRINCIPAL -->
+  <header class="header-hud">
+    <div class="brand-section">
+      <div class="logo-text">CHROMA HUNT</div>
+      <div id="levelCounter" class="level-tag">FASE 1 DE 3</div>
+    </div>
+
+    <div class="stats-section">
+      <div class="stat-box">
+        <span class="stat-label">Pontuação</span>
+        <span id="scoreDisplay" class="stat-value">0</span>
+      </div>
+
+      <div class="stat-box">
+        <span class="stat-label">Tempo</span>
+        <span id="timerDisplay" class="stat-value">00:00</span>
+      </div>
+
+      <div id="comboBadge" class="combo-badge hidden">
+        COMBO <span id="comboVal">2x</span>!
+      </div>
+    </div>
+
+    <div class="actions-section">
+      <button id="musicBtn" class="hud-btn" title="Alternar Trilha Lo-Fi Ambiente">🎵 Música: OFF</button>
+      <button id="soundBtn" class="hud-btn" title="Ativar/Desativar Efeitos Sonoros">🔊</button>
+      <button id="levelsBtn" class="hud-btn" title="Escolher Fase">🗺️ Fases</button>
+      <button id="helpBtn" class="hud-btn" title="Como Jogar & Regras">❓ Ajuda</button>
+    </div>
+  </header>
+
+  <!-- ÁREA CENTRAL DO JOGO (CANVAS + HUD FLUTUANTE) -->
+  <main class="game-viewport-container">
+    <div class="canvas-wrapper">
+      <canvas id="gameCanvas"></canvas>
+
+      <!-- Banner de Nome da Fase Atual -->
+      <div class="floating-controls-top">
+        <div id="levelName" class="level-banner">O Quarto do Criador Cósmico</div>
+      </div>
+
+      <!-- Controles de Câmera e Zoom -->
+      <div class="floating-controls-right">
+        <div class="zoom-group">
+          <button id="zoomInBtn" class="tool-btn" title="Aproximar Zoom">+</button>
+          <button id="zoomResetBtn" class="tool-btn" title="Resetar Zoom">1x</button>
+          <button id="zoomOutBtn" class="tool-btn" title="Afastar Zoom">-</button>
+        </div>
+      </div>
+
+      <!-- Botão da Lanterna UV (Luz Negra Estratégica) -->
+      <div class="floating-uv-container">
+        <button id="uvBtn" class="uv-btn" title="Ativar Lanterna UV (Atalho: Tecla Z ou U)">
+          <span>🔦 Luz Negra UV</span>
+        </button>
+        <div class="uv-battery-bar">
+          <div class="uv-battery-track">
+            <div id="uvFill" class="uv-battery-fill"></div>
+          </div>
+          <span id="uvVal" class="uv-battery-text">100%</span>
+        </div>
+      </div>
+
+      <!-- Aviso de Sobrecarga Anti-Spam -->
+      <div id="spamWarning" class="spam-warning hidden">
+        <div class="spam-title">⚠️ SOBRECARGA DO SCANNER!</div>
+        <div class="spam-desc">Muitos cliques aleatórios! Use o raciocínio e observe antes de clicar.</div>
+      </div>
+
+      <!-- Dica de Navegação -->
+      <div class="pan-hint">Arraste para mover o cenário • Roda do mouse para zoom</div>
+    </div>
+  </main>
+
+  <!-- BANDEJA DE ALVOS CAMUFLADOS (RODAPÉ) -->
+  <footer class="targets-tray-container">
+    <div class="tray-header">
+      <div class="tray-title">🎯 Objetos Camuflados (Clique no card para ler a charada)</div>
+      <div id="targetsLeft" class="targets-counter">5 restantes</div>
+    </div>
+    <div id="targetsList" class="targets-list">
+      <!-- Cards gerados dinamicamente via game.js -->
+    </div>
+  </footer>
+
+  <!-- MODAL DE CHARADA E RACIOCÍNIO DEDUTIVO -->
+  <div id="riddleModal" class="modal-backdrop hidden">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div id="riddleTargetName" class="modal-title">Objeto Misterioso</div>
+        <button id="closeRiddleBtn" class="close-btn">&times;</button>
+      </div>
+      <div class="riddle-body">
+        <div id="riddleText" class="riddle-quote">"..."</div>
+        <div id="riddleHint" class="riddle-tip">💡 Dica de Raciocínio: ...</div>
+      </div>
+      <div class="modal-actions" style="margin-top: 20px;">
+        <button onclick="document.getElementById('riddleModal').classList.add('hidden')" class="primary-btn">Entendido! Vou Procurar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL DE VITÓRIA / CONCLUSÃO DE FASE -->
+  <div id="victoryModal" class="modal-backdrop hidden">
+    <div class="modal-card victory">
+      <div class="victory-trophy">🏆</div>
+      <div id="victoryTitle" class="modal-title" style="font-size: 1.6rem; color: #fff;">Fase Concluída!</div>
+      <p style="color: var(--text-muted); font-size: 0.9rem; margin-top: 6px;">Seu olhar atento e raciocínio desvendaram todas as camuflagens!</p>
+
+      <div class="stats-grid">
+        <div class="stat-item">
+          <div class="stat-item-label">Pontuação Final</div>
+          <div id="statScore" class="stat-item-val">0</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-item-label">Tempo Total</div>
+          <div id="statTime" class="stat-item-val">00:00</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-item-label">Precisão dos Cliques</div>
+          <div id="statAccuracy" class="stat-item-val">100%</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-item-label">Maior Combo</div>
+          <div id="statCombo" class="stat-item-val">1x</div>
+        </div>
+      </div>
+
+      <div class="modal-actions">
+        <button id="replayLevelBtn" class="secondary-btn">Repetir Fase ↺</button>
+        <button id="nextLevelBtn" class="primary-btn">Próxima Fase ➔</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL DE AJUDA / COMO JOGAR -->
+  <div id="helpModal" class="modal-backdrop hidden">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div class="modal-title">⚡ Como Jogar & Dicas de Estratégia</div>
+        <button id="closeHelpBtn" class="close-btn">&times;</button>
+      </div>
+      <div class="help-list">
+        <div class="help-item">
+          <div class="help-icon">🔍</div>
+          <div><strong>Mimetismo & Camuflagem:</strong> Os objetos não estão apenas 'escondidos'; eles adaptaram suas cores, contornos e texturas aos itens do cenário (fios, ventiladores, livros, grafites).</div>
+        </div>
+        <div class="help-item">
+          <div class="help-icon">💡</div>
+          <div><strong>Raciocínio & Charadas:</strong> Clique nos cards na barra inferior para ler as charadas dedutivas de cada alvo e descobrir pistas sobre sua utilidade e localização.</div>
+        </div>
+        <div class="help-item">
+          <div class="help-icon">🔦</div>
+          <div><strong>Lanterna UV (Luz Negra):</strong> Ilumina contornos fluorescentes dos objetos camuflados, mas sua bateria é limitada! Use com sabedoria (tecla Z ou U).</div>
+        </div>
+        <div class="help-item">
+          <div class="help-icon">📦</div>
+          <div><strong>Cenário Interativo:</strong> Alguns itens estão ocultos sob objetos que você pode mover (ex: almofadas, caixas flutuantes, escudos). Clique para interagir!</div>
+        </div>
+        <div class="help-item">
+          <div class="help-icon">⚠️</div>
+          <div><strong>Penalidade Anti-Spam:</strong> Clicar na tela sem parar causa sobrecarga no scanner e perde pontos! Observe com atenção antes de clicar.</div>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button id="closeHelpBtnBottom" onclick="document.getElementById('helpModal').classList.add('hidden')" class="primary-btn">Bora Jogar!</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL DE SELEÇÃO DE FASES -->
+  <div id="levelsModal" class="modal-backdrop hidden">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div class="modal-title">🗺️ Seleção de Fases</div>
+        <button id="closeLevelsBtn" class="close-btn">&times;</button>
+      </div>
+      <div id="levelsGrid" class="levels-grid">
+        <!-- Fases inseridas dinamicamente -->
+      </div>
+    </div>
+  </div>
+
+  <!-- SCRIPTS DO MOTOR E REGRAS DO JOGO -->
+  <script src="js/audio.js"></script>
+  <script src="js/levels.js"></script>
+  <script src="js/engine.js"></script>
+  <script src="js/game.js"></script>
+</body>
+</html>
+
